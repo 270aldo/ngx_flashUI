@@ -1,0 +1,213 @@
+
+/* index.css - NGX Flash UI Identity */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --brand-violet: #6D00FF;
+    --brand-glow: rgba(109, 0, 255, 0.4);
+    --app-bg: #050507; 
+    --sidebar-bg: rgba(10, 10, 15, 0.9);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --input-bg: rgba(15, 15, 20, 0.85);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0; padding: 0;
+    background-color: var(--app-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    display: flex;
+}
+
+/* History Sidebar */
+.history-sidebar {
+    width: 280px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    backdrop-filter: blur(50px);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 500;
+}
+
+.sidebar-header {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-violet);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-empty {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.history-item {
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.history-item.active {
+    background: rgba(109, 0, 255, 0.15);
+    border-color: rgba(109, 0, 255, 0.4);
+    color: white;
+}
+
+.sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.sidebar-footer button {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    color: rgba(255, 62, 62, 0.7);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sidebar-footer button:hover {
+    background: rgba(255, 62, 62, 0.1);
+    border-color: rgba(255, 62, 62, 0.4);
+}
+
+.main-content-shift {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.immersive-app {
+    height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+}
+
+/* Stage & Grid */
+.stage-container {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+}
+
+.artifact-grid {
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px; 
+    width: 95%; 
+    max-width: 1500px;
+    padding: 40px;
+    position: relative;
+}
+
+.artifact-card {
+    position: relative; 
+    aspect-ratio: 16/11;
+    background: #000; 
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    overflow: hidden; 
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+.artifact-card:hover { 
+    border-color: var(--brand-violet);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 50px -15px var(--brand-glow);
+}
+
+/* Focus Engine */
+.mode-focus .artifact-card { opacity: 0; transform: scale(0.96); pointer-events: none; }
+.mode-focus .artifact-card.focused {
+    position: fixed; inset: 6%; z-index: 100; opacity: 1; transform: scale(1);
+    pointer-events: auto; border-color: var(--brand-violet);
+    box-shadow: 0 0 120px -30px var(--brand-glow);
+}
+
+.empty-state {
+    text-align: center;
+    z-index: 5;
+    transition: opacity 0.8s ease;
+}
+
+.empty-state.fade-out { opacity: 0; pointer-events: none; }
+
+.empty-content h1 { 
+    font-size: 4.5rem; font-weight: 900; letter-spacing: -0.05em; margin: 0;
+    background: linear-gradient(to bottom, #fff, #999);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.empty-content p { color: var(--text-secondary); font-size: 1rem; opacity: 0.6; }
+
+/* Input Container */
+.floating-input-container {
+    position: absolute; bottom: 35px; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 200;
+}
+
+.input-wrapper {
+    width: 90%; max-width: 740px; 
+    background: var(--input-bg);
+    backdrop-filter: blur(30px); 
+    border: 1px solid var(--border-color);
+    border-radius: 32px; padding: 8px 8px 8px 24px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.7);
+}
+
+@media (max-width: 1200px) {
+    .artifact-grid { grid-template-columns: 1fr; gap: 20px; overflow-y: auto; height: 70%; padding-bottom: 100px; }
+    .history-sidebar { width: 60px; }
+    .history-sidebar span, .history-sidebar button { display: none; }
+    .history-sidebar .sidebar-header { justify-content: center; padding: 20px 0; }
+}
+
+@media (max-width: 768px) {
+    .history-sidebar { display: none; }
+    .empty-content h1 { font-size: 2.5rem; }
+}

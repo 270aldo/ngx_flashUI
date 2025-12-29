@@ -1,0 +1,8 @@
+{
+  "name": "NGX Flash UI",
+  "description": "Rapidly generate UI inspired by images and voice dictation with Gemini 3 Flash.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}

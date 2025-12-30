@@ -18,11 +18,11 @@ import SideDrawer from './components/SideDrawer';
 import { 
     ThinkingIcon, 
     CodeIcon, 
-    SparklesIcon, 
     ArrowUpIcon, 
     GridIcon,
     ExportIcon,
-    MicIcon
+    MicIcon,
+    PlusIcon
 } from './components/Icons';
 
 type GenerationMode = 'flash' | 'a2ui';
@@ -67,18 +67,14 @@ function App() {
       data: any; 
   }>({ isOpen: false, mode: null, title: '', data: null });
 
-  const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
-
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Sync Persistence
   useEffect(() => {
     localStorage.setItem('ngx_sessions', JSON.stringify(sessions));
   }, [sessions]);
 
-  // Handle Speech Recognition Setup
   useEffect(() => {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
@@ -97,7 +93,6 @@ function App() {
       }
   }, []);
 
-  // Cycle placeholders
   useEffect(() => {
       const interval = setInterval(() => {
           setPlaceholderIndex(prev => (prev + 1) % placeholders.length);
@@ -151,6 +146,13 @@ function App() {
     URL.revokeObjectURL(url);
   }, [sessions, currentSessionIndex, focusedArtifactIndex]);
 
+  const handleNewProject = useCallback(() => {
+      setCurrentSessionIndex(-1);
+      setFocusedArtifactIndex(null);
+      setInputValue('');
+      inputRef.current?.focus();
+  }, []);
+
   const handleSendMessage = useCallback(async (manualPrompt?: string) => {
     const promptToUse = manualPrompt || inputValue;
     const trimmedInput = promptToUse.trim();
@@ -162,7 +164,7 @@ function App() {
 
     const placeholderArtifacts: Artifact[] = Array(3).fill(null).map((_, i) => ({
         id: `${sessionId}_${i}`,
-        styleName: 'Analizando concepto...',
+        styleName: 'Analizando...',
         html: '',
         status: 'streaming',
     }));
@@ -201,7 +203,7 @@ function App() {
             contents: { role: 'user', parts: styleParts }
         });
 
-        let generatedStyles: string[] = ["Dynamic View", "Smart Layout", "Interactive UI"];
+        let generatedStyles: string[] = ["Modern Clean", "Bold & Dark", "Glassmorphism"];
         try {
             const rawText = styleResponse.text || '';
             const jsonMatch = rawText.match(/\[[\s\S]*\]/);
@@ -241,10 +243,18 @@ function App() {
                 let fullHtml = '';
                 for await (const chunk of responseStream) {
                     fullHtml += chunk.text || '';
-                    // Aggressive cleaning during streaming
-                    let cleaned = fullHtml
-                        .replace(/^```html\n?/, '')
-                        .replace(/\n?```$/, '')
+                    
+                    let cleaned = fullHtml;
+                    const docTypeIdx = cleaned.indexOf('<!DOCTYPE');
+                    const htmlIdx = cleaned.indexOf('<html');
+                    let startIdx = 0;
+                    if (docTypeIdx !== -1) startIdx = docTypeIdx;
+                    else if (htmlIdx !== -1) startIdx = htmlIdx;
+                    
+                    if (startIdx > 0) cleaned = cleaned.substring(startIdx);
+
+                    cleaned = cleaned
+                        .replace(/```html/g, '')
                         .replace(/```/g, '')
                         .trim();
 
@@ -275,16 +285,24 @@ function App() {
     }
   }, [inputValue, isLoading, sessions.length, generationMode, selectedImage, selectedModel]);
 
-  const hasStarted = sessions.length > 0 || isLoading;
+  const showEmptyState = currentSessionIndex === -1;
+  const currentArtifact = focusedArtifactIndex !== null && sessions[currentSessionIndex] 
+      ? sessions[currentSessionIndex].artifacts[focusedArtifactIndex] 
+      : null;
 
   return (
     <>
         <aside className="history-sidebar">
             <div className="sidebar-header">
-                <GridIcon /> <span>Proyectos</span>
+                <div className="header-title">
+                    <GridIcon /> <span>Proyectos</span>
+                </div>
+                <button className="new-project-btn" onClick={handleNewProject} title="Nuevo Proyecto">
+                    <PlusIcon />
+                </button>
             </div>
             <div className="sidebar-list">
-                {sessions.length === 0 && <div className="sidebar-empty">Sin historial</div>}
+                {sessions.length === 0 && <div className="sidebar-empty">Tu historial aparecerá aquí</div>}
                 {sessions.map((s, idx) => (
                     <button 
                         key={s.id} 
@@ -311,7 +329,7 @@ function App() {
             {drawerState.mode === 'code' && <pre className="code-block"><code>{drawerState.data}</code></pre>}
         </SideDrawer>
 
-        <main className="immersive-app main-content-shift">
+        <main className="main-layout">
             <DottedGlowBackground 
                 gap={30} 
                 radius={1.5} 
@@ -320,92 +338,111 @@ function App() {
                 speedScale={0.3}
             />
 
-            <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
-                 <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
+            {/* SAFE EMPTY STATE: Normal Flex Flow */}
+            {showEmptyState && (
+                <div className="empty-state-container">
                      <div className="empty-content">
-                         <h1>NGX Flash UI</h1>
-                         <p>Genera interfaces instantáneas con Gemini 3.0</p>
+                         <h1>Espacio Creativo</h1>
+                         <p>Visualiza tus ideas con Gemini 3.0</p>
                      </div>
-                 </div>
+                </div>
+            )}
 
-                {sessions[currentSessionIndex] && (
-                    <div className="session-group active-session">
-                        <div className="artifact-grid">
-                            {sessions[currentSessionIndex].artifacts.map((artifact, aIndex) => (
-                                <ArtifactCard 
-                                    key={artifact.id}
-                                    artifact={artifact}
-                                    isFocused={focusedArtifactIndex === aIndex}
-                                    onClick={() => setFocusedArtifactIndex(aIndex)}
-                                />
-                            ))}
+            {/* CONTENT VIEW: Grid */}
+            {!showEmptyState && sessions[currentSessionIndex] && (
+                <div className="grid-view-container">
+                     <div className="grid-container">
+                        {sessions[currentSessionIndex].artifacts.map((artifact, aIndex) => (
+                            <ArtifactCard 
+                                key={artifact.id}
+                                artifact={artifact}
+                                isFocused={false}
+                                onClick={() => setFocusedArtifactIndex(aIndex)}
+                            />
+                        ))}
+                     </div>
+                </div>
+            )}
+
+            {/* FOCUS OVERLAY: Full Screen Override */}
+            {currentArtifact && (
+                <div className="focus-overlay">
+                    {/* Action Bar inside Focus Context */}
+                     <div className="action-bar visible">
+                         <div className="action-bar-content">
+                            <div className="active-prompt-label">{sessions[currentSessionIndex]?.prompt}</div>
+                            <div className="action-buttons">
+                                <button onClick={() => setFocusedArtifactIndex(null)}><GridIcon /> Volver</button>
+                                <button onClick={handleCopyCode}><CodeIcon /> Copiar</button>
+                                <button onClick={() => setDrawerState({isOpen: true, mode: 'code', title: 'Código Fuente', data: currentArtifact?.html})}><CodeIcon /> Ver Código</button>
+                                <button onClick={handleExport} className="export-btn"><ExportIcon /> Descargar</button>
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
 
-            <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
-                 <div className="active-prompt-label">{sessions[currentSessionIndex]?.prompt}</div>
-                 <div className="action-buttons">
-                    <button onClick={() => setFocusedArtifactIndex(null)}><GridIcon /> Volver</button>
-                    <button onClick={handleCopyCode}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar
-                    </button>
-                    <button onClick={() => setDrawerState({isOpen: true, mode: 'code', title: 'Código Fuente', data: sessions[currentSessionIndex]?.artifacts[focusedArtifactIndex!]?.html})}><CodeIcon /> Ver Código</button>
-                    <button onClick={handleExport} className="export-btn"><ExportIcon /> Descargar</button>
-                 </div>
-            </div>
-
-            <div className="floating-input-container">
-                {selectedImage && (
-                    <div className="image-preview-bubble">
-                        <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} alt="Ref" />
-                        <button className="clear-image" onClick={() => setSelectedImage(null)}>&times;</button>
-                        <span className="inspiration-label">Inspiración Activa</span>
-                    </div>
-                )}
-                
-                <div className="selector-rows">
-                    <div className="mode-tabs">
-                        <button className={generationMode === 'flash' ? 'active' : ''} onClick={() => setGenerationMode('flash')}>Flash</button>
-                        <button className={generationMode === 'a2ui' ? 'active' : ''} onClick={() => setGenerationMode('a2ui')}>A2UI</button>
-                    </div>
-
-                    <div className="model-selector">
-                        <button 
-                            className={selectedModel === 'gemini-3-flash-preview' ? 'active' : ''} 
-                            onClick={() => setSelectedModel('gemini-3-flash-preview')}
-                        >⚡ Flash 3.0</button>
-                        <button 
-                            className={selectedModel === 'gemini-3-pro-preview' ? 'active' : ''} 
-                            onClick={() => setSelectedModel('gemini-3-pro-preview')}
-                        >💎 Pro 3.0</button>
+                    <div className="focus-content">
+                        <ArtifactCard 
+                            artifact={currentArtifact}
+                            isFocused={true}
+                            onClick={() => {}}
+                        />
                     </div>
                 </div>
+            )}
 
-                <div className={`input-wrapper ${isLoading ? 'loading' : ''} ${isListening ? 'listening' : ''}`}>
-                    <input type="file" accept="image/*" style={{display: 'none'}} ref={fileInputRef} onChange={handleFileChange} />
-                    <button className="attach-button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} title="Adjuntar imagen de inspiración">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><line x1="16" y1="5" x2="22" y2="5"/><line x1="19" y1="2" x2="19" y2="8"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                    </button>
-                    <button className={`mic-button ${isListening ? 'active' : ''}`} onClick={toggleListening} disabled={isLoading} title="Dictar por voz">
-                        <MicIcon />
-                    </button>
-                    {!isLoading ? (
-                        <input 
-                            ref={inputRef}
-                            type="text" 
-                            placeholder={isListening ? "Escuchando..." : placeholders[placeholderIndex]}
-                            value={inputValue} 
-                            onChange={(e) => setInputValue(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} 
-                        />
-                    ) : (
-                        <div className="input-generating-label"><ThinkingIcon /> Procesando con {selectedModel.includes('pro') ? 'Pro' : 'Flash'}...</div>
+            {/* UI LAYER: Floating Input */}
+            <div className="ui-layer">
+                <div className="floating-input-container">
+                    {selectedImage && (
+                        <div className="image-preview-bubble">
+                            <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} alt="Ref" />
+                            <button className="clear-image" onClick={() => setSelectedImage(null)}>&times;</button>
+                            <span className="inspiration-label">Inspiración Activa</span>
+                        </div>
                     )}
-                    <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
-                        <ArrowUpIcon />
-                    </button>
+                    
+                    <div className="selector-rows">
+                        <div className="mode-tabs">
+                            <button className={generationMode === 'flash' ? 'active' : ''} onClick={() => setGenerationMode('flash')}>Flash</button>
+                            <button className={generationMode === 'a2ui' ? 'active' : ''} onClick={() => setGenerationMode('a2ui')}>A2UI</button>
+                        </div>
+
+                        <div className="model-selector">
+                            <button 
+                                className={selectedModel === 'gemini-3-flash-preview' ? 'active' : ''} 
+                                onClick={() => setSelectedModel('gemini-3-flash-preview')}
+                            >⚡ Flash 3.0</button>
+                            <button 
+                                className={selectedModel === 'gemini-3-pro-preview' ? 'active' : ''} 
+                                onClick={() => setSelectedModel('gemini-3-pro-preview')}
+                            >💎 Pro 3.0</button>
+                        </div>
+                    </div>
+
+                    <div className={`input-wrapper ${isLoading ? 'loading' : ''} ${isListening ? 'listening' : ''}`}>
+                        <input type="file" accept="image/*" style={{display: 'none'}} ref={fileInputRef} onChange={handleFileChange} />
+                        <button className="attach-button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} title="Adjuntar imagen de inspiración">
+                            <PlusIcon />
+                        </button>
+                        <button className={`mic-button ${isListening ? 'active' : ''}`} onClick={toggleListening} disabled={isLoading} title="Dictar por voz">
+                            <MicIcon />
+                        </button>
+                        {!isLoading ? (
+                            <input 
+                                ref={inputRef}
+                                type="text" 
+                                placeholder={isListening ? "Escuchando..." : placeholders[placeholderIndex]}
+                                value={inputValue} 
+                                onChange={(e) => setInputValue(e.target.value)} 
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} 
+                            />
+                        ) : (
+                            <div className="input-generating-label"><ThinkingIcon /> Generando...</div>
+                        )}
+                        <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
+                            <ArrowUpIcon />
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
